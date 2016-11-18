@@ -26,11 +26,11 @@ public class Battleship {
 		for(int i = 0; i < grid.length; i++) { for(int j = 0; j < grid[i].length; j++) grid[i][j] = -1; }
 
 		// Place Ships
-		placeDestroyer("A0", "A1");
-		placeSubmarine("B0", "B2");
-		placeCruiser("C0", "C2");
-		placeBattleship("D0", "D3");
-		placeCarrier("E0", "E4");
+		placeDestroyer("D6", "D7"); // size 2
+		placeSubmarine("E5", "E7"); // size 3
+		placeCruiser("F5", "F7");   // size 3
+		placeBattleship("G4", "G7");// size 4
+		placeCarrier("H3", "H7");	// size 5
 	}
 
 	void makeMove() {
