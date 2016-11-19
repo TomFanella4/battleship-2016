@@ -7,6 +7,7 @@
  * Battleship Client
  */
 
+import java.awt.*;
 import java.io.*;
 import java.net.Socket;
 import java.net.InetAddress;
@@ -23,6 +24,11 @@ public class Battleship {
 
 	char[] letters;
 	int[][] grid;
+    boolean destroyerAlive = true;
+    boolean submarineAlive = true;
+    boolean cruiseAlive = true;
+    boolean battleshipAlive = true;
+    boolean carrierAlive = true;
 	int[][] ourGrid;
 
 	boolean isValidLocation(int x, int y) { return x >= 0 && y >= 0 && x < grid.length && y < grid[0].length && ourGrid[x][y] == 0; }
@@ -162,25 +168,267 @@ public class Battleship {
 		placeSubmarine("E5", "E7"); // size 3
 		placeCruiser("F5", "F7");   // size 3
 		placeBattleship("G4", "G7");// size 4
-		placeCarrier("H3", "H7");	// size 5*/
+		placeCarrier("H3", "H7");	// size 5
+		placeDestroyer("D6", "D7"); 	// size 2
+		placeSubmarine("F0", "H0"); 	// size 3
+		placeCruiser("A7", "C7");   	// size 3
+		placeBattleship("G4", "G7");	// size 4
+		placeCarrier("B2", "B6");		// size 5
+        */
 	}
 
 	void makeMove() {
 
-		for(int i = 0; i < 8; i++) {
-			for(int j = 0; j < 8; j++) {
-				if (this.grid[i][j] == -1) {
-					String wasHitSunkOrMiss = placeMove(this.letters[i] + String.valueOf(j));
-					recordMove(wasHitSunkOrMiss, i, j);
-					if (wasHitSunkOrMiss.equals("Hit") || wasHitSunkOrMiss.equals("Sunk")) {
-						this.grid[i][j] = 1;
-					} else {
-						this.grid[i][j] = 0;			
-					}
-					return;
+		Point p = getBestShot();
+		int shoti = (int)p.getX();
+		int shotj = (int)p.getY();
+
+		switch (move()) {
+			case 0:	shoti = 2; shotj = 2; break;
+			case 1: shoti = 5; shotj = 2; break;
+			case 2: shoti = 2; shotj = 5; break;
+			case 3: shoti = 5; shotj = 5; break;
+			default: break;
+		}
+
+		String wasHitSunkOrMiss = placeMove(this.letters[shoti] + String.valueOf(shotj));
+
+		if (wasHitSunkOrMiss.equals("Sunk")) {
+			determineSink(shoti, shotj);
+			this.grid[shoti][shotj] = 2;
+		} else if (wasHitSunkOrMiss.equals("Hit")) {
+			this.grid[shoti][shotj] = 1;
+		} else {
+			this.grid[shoti][shotj] = 0;
+		}
+		return;
+	}
+
+	int move() {
+		int move = 0;
+		for (int i = 0; i < this.grid.length; i++) {
+			for (int j = 0; j < this.grid[i].length; j++) {
+				if (this.grid[i][j] > -1)
+					move++;
+			}
+		}
+		return move;
+	}
+
+	Point getBestShot() {
+		// probability distribution of the grid
+		double[][] pGrid = new double[8][8];
+
+		// iterate over each position
+		for (int i = 0; i < this.grid.length; i++) {
+			for (int j = 0; j < this.grid[i].length; j++) {
+				// if cell is hit, zero probability
+				if (this.grid[i][j] > -1) {
+					pGrid[i][j] = 0;
+					continue;
+				}
+
+				if (i < 5 && j < 5) {
+					pGrid[i][j] += 5;
+				}
+
+				// test if we can fit the ships in this cell some possible ways
+				// test Destroyer	size 2
+				int size = 2;
+				if (destroyerAlive) {
+					updatePGrid(pGrid, i, j, 4, determinePlacementRight(i, j, size));
+					updatePGrid(pGrid, i, j, 4, determinePlacementDown(i, j, size));
+					updatePGrid(pGrid, i, j, 4, determinePlacementLeft(i, j, size));
+					updatePGrid(pGrid, i, j, 4, determinePlacementUp(i, j, size));
+				}
+
+				// test Submarine	size 3
+				size = 3;
+				if (submarineAlive) {
+					updatePGrid(pGrid, i, j, 3, determinePlacementRight(i, j, size));
+					updatePGrid(pGrid, i, j, 3, determinePlacementDown(i, j, size));
+					updatePGrid(pGrid, i, j, 3, determinePlacementLeft(i, j, size));
+					updatePGrid(pGrid, i, j, 3, determinePlacementUp(i, j, size));
+				}
+
+				// test Cruiser		size 3
+				size = 3;
+				if (cruiseAlive) {
+					updatePGrid(pGrid, i, j, 4, determinePlacementRight(i, j, size));
+					updatePGrid(pGrid, i, j, 4, determinePlacementDown(i, j, size));
+					updatePGrid(pGrid, i, j, 4, determinePlacementLeft(i, j, size));
+					updatePGrid(pGrid, i, j, 4, determinePlacementUp(i, j, size));
+				}
+
+				// test Battleship 	size 4
+				size = 4;
+				if (battleshipAlive) {
+					updatePGrid(pGrid, i, j, 3, determinePlacementRight(i, j, size));
+					updatePGrid(pGrid, i, j, 3, determinePlacementDown(i, j, size));
+					updatePGrid(pGrid, i, j, 3, determinePlacementLeft(i, j, size));
+					updatePGrid(pGrid, i, j, 3, determinePlacementUp(i, j, size));
+				}
+
+				// test Carrier 	size 5
+				size = 5;
+				if (carrierAlive) {
+					updatePGrid(pGrid, i, j, 2, determinePlacementRight(i, j, size));
+					updatePGrid(pGrid, i, j, 2, determinePlacementDown(i, j, size));
+					updatePGrid(pGrid, i, j, 2, determinePlacementLeft(i, j, size));
+					updatePGrid(pGrid, i, j, 2, determinePlacementUp(i, j, size));
+				}
+
+			}
+		}
+
+		printPGrid(pGrid);
+
+		// choose highest probability point
+		int besti = 0;
+		int bestj = 0;
+		double best = 0d;
+
+		for (int i = 0; i < pGrid.length; i++) {
+			for (int j = 0; j < pGrid[i].length; j++) {
+				if (pGrid[i][j] > best) {
+					besti = i;
+					bestj = j;
+					best = pGrid[i][j];
 				}
 			}
 		}
+
+		return new Point(besti, bestj);
+	}
+
+	void updatePGrid(double[][] pGrid, int i, int j, int weight, int place) {
+		if (place > 0) {
+			pGrid[i][j] += place + weight;
+		}
+	}
+
+	// 0 if we can place it no conflict
+	// 1 if we place it on a hit spot, no sink confirmed
+	// 2 if we place it on a hit spot, sink confirmed
+	int determinePlacementDown(int i, int j, int len) {
+		int placement = 0;
+
+		for (int k = 0; k < len; k++) {
+			if (i + k >= this.grid.length) {
+				return -1;
+			}
+
+			// up and down
+			switch (this.grid[i + k][j]) {
+				case 1:
+					placement += 10;
+					break;
+				case 2:
+					return -1;
+				default:
+					placement += 1;
+					break;
+			}
+		}
+
+		return placement;
+	}
+
+	// 0 if we can place it no conflict
+	// 1 if we place it on a hit spot, no sink confirmed
+	// 2 if we place it on a hit spot, sink confirmed
+	int determinePlacementUp(int i, int j, int len) {
+		int placement = 0;
+
+		for (int k = 0; k < len; k++) {
+			if (i - k < 0) {
+				return -1;
+			}
+
+			// up and down
+			switch (this.grid[i - k][j]) {
+				case 1:
+					placement += 10;
+					break;
+				case 2:
+					return -1;
+				default:
+					placement += 1;
+					break;
+			}
+		}
+
+		return placement;
+	}
+
+	// 0 if we can place it no conflict
+	// 1 if we place it on a hit spot, no sink confirmed
+	// 2 if we place it on a hit spot, sink confirmed
+	int determinePlacementRight(int i, int j, int len) {
+		int placement = 0;
+
+		for (int k = 0; k < len; k++) {
+			if (j + k >= this.grid[i].length) {
+				return -1;
+			}
+
+			// left and right
+			switch (this.grid[i][j + k]) {
+				case 1:
+					placement += 10;
+					break;
+				case 2:
+					return -1;
+				default:
+					placement += 1;
+					break;
+			}
+		}
+
+		return placement;
+	}
+	// 0 if we can place it no conflict
+	// 1 if we place it on a hit spot, no sink confirmed
+	// 2 if we place it on a hit spot, sink confirmed
+	int determinePlacementLeft(int i, int j, int len) {
+		int placement = 0;
+
+		for (int k = 0; k < len; k++) {
+			if (j - k < 0) {
+				return -1;
+			}
+
+			// left and right
+			switch (this.grid[i][j - k]) {
+				case 1:
+					placement += 10;
+					break;
+				case 2:
+					return -1;
+				default:
+					placement += 1;
+					break;
+			}
+		}
+
+		return placement;
+	}
+
+	void determineSink(int i, int j) {
+		// determine which ship was sunk
+		// update values around to sink
+
+	}
+
+	void printPGrid(double[][] pGrid) {
+		System.out.println("pGrid:");
+		for (int i = 0; i < pGrid.length; i++) {
+			for (int j = 0; j < pGrid[i].length; j++) {
+				System.out.printf("|%4.0f  ", pGrid[i][j]);
+			}
+			System.out.println();
+		}
+		System.out.println("\n\n");
 	}
 
 	void recordMove(String wasHitSunkOrMiss, int i, int j) {
