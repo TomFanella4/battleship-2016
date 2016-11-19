@@ -116,6 +116,8 @@ public class Battleship {
 	}
 
 	void placeShips(String opponentID) {
+		System.out.println("***************** " + opponentID + " *****************");
+
 		// Fill Grid With -1s
 		for(int i = 0; i < grid.length; i++) { for(int j = 0; j < grid[i].length; j++) grid[i][j] = -1; }
 		for(int i = 0; i < ourGrid.length; i++) { for(int j = 0; j < ourGrid[i].length; j++) ourGrid[i][j] = 0; }
@@ -130,7 +132,7 @@ public class Battleship {
 
 		}
 
-		// Place Ships
+        // Place Ships
 		String[] pos;
 
 		pos = getRandomPos(1);
@@ -164,17 +166,20 @@ public class Battleship {
 		}
 		placeCarrier(pos[0], pos[1]);
 
-		/*placeDestroyer("D6", "D7"); // size 2
-		placeSubmarine("E5", "E7"); // size 3
-		placeCruiser("F5", "F7");   // size 3
-		placeBattleship("G4", "G7");// size 4
-		placeCarrier("H3", "H7");	// size 5
-		placeDestroyer("D6", "D7"); 	// size 2
-		placeSubmarine("F0", "H0"); 	// size 3
-		placeCruiser("A7", "C7");   	// size 3
-		placeBattleship("G4", "G7");	// size 4
-		placeCarrier("B2", "B6");		// size 5
-        */
+        /*
+		if (Math.random() < 0.5) {
+			placeDestroyer("F6", "F7");    // size 2
+			placeSubmarine("F0", "H0");    // size 3
+			placeCruiser("A7", "C7");    // size 3
+			placeBattleship("H2", "H5");    // size 4
+			placeCarrier("B1", "B5");        // size 5
+		} else {
+			placeDestroyer("H2", "H3");    // size 2
+			placeSubmarine("F7", "H7");    // size 3
+			placeCruiser("B7", "D7");    // size 3
+			placeBattleship("A2", "A5");    // size 4
+			placeCarrier("C0", "C4");        // size 5
+		}*/
 	}
 
 	void makeMove() {
@@ -235,47 +240,53 @@ public class Battleship {
 				// test if we can fit the ships in this cell some possible ways
 				// test Destroyer	size 2
 				int size = 2;
+				int weight = 5;
 				if (destroyerAlive) {
-					updatePGrid(pGrid, i, j, 4, determinePlacementRight(i, j, size));
-					updatePGrid(pGrid, i, j, 4, determinePlacementDown(i, j, size));
-					updatePGrid(pGrid, i, j, 4, determinePlacementLeft(i, j, size));
-					updatePGrid(pGrid, i, j, 4, determinePlacementUp(i, j, size));
+
+					updatePGrid(pGrid, i, j, weight, determinePlacementRight(i, j, size));
+					updatePGrid(pGrid, i, j, weight, determinePlacementDown(i, j, size));
+					updatePGrid(pGrid, i, j, weight, determinePlacementLeft(i, j, size));
+					updatePGrid(pGrid, i, j, weight, determinePlacementUp(i, j, size));
 				}
 
 				// test Submarine	size 3
 				size = 3;
+				weight = 3;
 				if (submarineAlive) {
-					updatePGrid(pGrid, i, j, 3, determinePlacementRight(i, j, size));
-					updatePGrid(pGrid, i, j, 3, determinePlacementDown(i, j, size));
-					updatePGrid(pGrid, i, j, 3, determinePlacementLeft(i, j, size));
-					updatePGrid(pGrid, i, j, 3, determinePlacementUp(i, j, size));
+					updatePGrid(pGrid, i, j, weight, determinePlacementRight(i, j, size));
+					updatePGrid(pGrid, i, j, weight, determinePlacementDown(i, j, size));
+					updatePGrid(pGrid, i, j, weight, determinePlacementLeft(i, j, size));
+					updatePGrid(pGrid, i, j, weight, determinePlacementUp(i, j, size));
 				}
 
 				// test Cruiser		size 3
 				size = 3;
+				weight = 4;
 				if (cruiseAlive) {
-					updatePGrid(pGrid, i, j, 4, determinePlacementRight(i, j, size));
-					updatePGrid(pGrid, i, j, 4, determinePlacementDown(i, j, size));
-					updatePGrid(pGrid, i, j, 4, determinePlacementLeft(i, j, size));
-					updatePGrid(pGrid, i, j, 4, determinePlacementUp(i, j, size));
+					updatePGrid(pGrid, i, j, weight, determinePlacementRight(i, j, size));
+					updatePGrid(pGrid, i, j, weight, determinePlacementDown(i, j, size));
+					updatePGrid(pGrid, i, j, weight, determinePlacementLeft(i, j, size));
+					updatePGrid(pGrid, i, j, weight, determinePlacementUp(i, j, size));
 				}
 
 				// test Battleship 	size 4
 				size = 4;
+				weight = 3;
 				if (battleshipAlive) {
-					updatePGrid(pGrid, i, j, 3, determinePlacementRight(i, j, size));
-					updatePGrid(pGrid, i, j, 3, determinePlacementDown(i, j, size));
-					updatePGrid(pGrid, i, j, 3, determinePlacementLeft(i, j, size));
-					updatePGrid(pGrid, i, j, 3, determinePlacementUp(i, j, size));
+					updatePGrid(pGrid, i, j, weight, determinePlacementRight(i, j, size));
+					updatePGrid(pGrid, i, j, weight, determinePlacementDown(i, j, size));
+					updatePGrid(pGrid, i, j, weight, determinePlacementLeft(i, j, size));
+					updatePGrid(pGrid, i, j, weight, determinePlacementUp(i, j, size));
 				}
 
 				// test Carrier 	size 5
 				size = 5;
+				weight = 2;
 				if (carrierAlive) {
-					updatePGrid(pGrid, i, j, 2, determinePlacementRight(i, j, size));
-					updatePGrid(pGrid, i, j, 2, determinePlacementDown(i, j, size));
-					updatePGrid(pGrid, i, j, 2, determinePlacementLeft(i, j, size));
-					updatePGrid(pGrid, i, j, 2, determinePlacementUp(i, j, size));
+					updatePGrid(pGrid, i, j, weight, determinePlacementRight(i, j, size));
+					updatePGrid(pGrid, i, j, weight, determinePlacementDown(i, j, size));
+					updatePGrid(pGrid, i, j, weight, determinePlacementLeft(i, j, size));
+					updatePGrid(pGrid, i, j, weight, determinePlacementUp(i, j, size));
 				}
 
 			}
