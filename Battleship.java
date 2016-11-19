@@ -15,6 +15,7 @@ import java.lang.Thread;
 public class Battleship {
 	public static String API_KEY = "487674642"; ///////// PUT YOUR API KEY HERE /////////
 	public static String GAME_SERVER = "battleshipgs.purduehackers.com";
+	public String opponent;
 
 	//////////////////////////////////////  PUT YOUR CODE HERE //////////////////////////////////////
 
@@ -24,6 +25,17 @@ public class Battleship {
 	void placeShips(String opponentID) {
 		// Fill Grid With -1s
 		for(int i = 0; i < grid.length; i++) { for(int j = 0; j < grid[i].length; j++) grid[i][j] = -1; }
+
+		// Save opponent ID
+		this.opponent = opponentID;
+		try {
+			File opponentFile = new File(opponentID + ".txt");
+			opponentFile.createNewFile();
+		}
+		catch(Exception e) {
+
+		}
+
 
 		// Place Ships
 		placeDestroyer("D6", "D7"); // size 2
