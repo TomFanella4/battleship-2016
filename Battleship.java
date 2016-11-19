@@ -11,6 +11,7 @@ import java.io.*;
 import java.net.Socket;
 import java.net.InetAddress;
 import java.lang.Thread;
+import java.util.ArrayList;
 
 public class Battleship {
 	public static String API_KEY = "487674642"; ///////// PUT YOUR API KEY HERE /////////
@@ -20,17 +21,127 @@ public class Battleship {
 
 	char[] letters;
 	int[][] grid;
+	int[][] ourGrid;
+
+	boolean isValidLocation(int x, int y) {
+		return x >= 0 && y >= 0 && x < grid.length && y < grid[0].length;
+	}
+
+	String[] getRandomPos(int size) {
+		String[] coords = new String[2];
+		int xCoord = (int)(Math.random() * grid.length);
+		int yCoord = (int)(Math.random() * grid[0].length);
+
+		// 0=north, 1=east, 2=south, 3=west
+		int orientation = (int)(Math.random() * 4);
+
+		coords[0] = Character.toString((char)(xCoord + 'A'));
+		coords[0] += yCoord;
+
+		if (orientation == 0 && isValidLocation(xCoord, yCoord + size)) {
+			for (int i = 0; i < size; i++) {
+				if (ourGrid[xCoord][yCoord + i] != -1) {
+					coords = getRandomPos(size);
+					return coords;
+				}
+			}
+			for (int i = 0; i < size; i++) {
+				ourGrid[xCoord][yCoord + i] = 1;
+			}
+
+			coords[1] = Character.toString((char)(xCoord + 'A'));
+			coords[1] += yCoord + size;
+		} else if (orientation == 1 && isValidLocation(xCoord + size, yCoord)) {
+			for (int i = 0; i < size; i++) {
+				if (ourGrid[xCoord + i][yCoord] != -1) {
+					coords = getRandomPos(size);
+					return coords;
+				}
+			}
+			for (int i = 0; i < size; i++) {
+				ourGrid[xCoord + i][yCoord] = 1;
+			}
+
+			coords[1] = Character.toString((char)(xCoord + size + 'A'));
+			coords[1] += yCoord;
+		} else if (orientation == 2 && isValidLocation(xCoord, yCoord - size)) {
+			for (int i = 0; i < size; i++) {
+				if (ourGrid[xCoord][yCoord - 1] != -1) {
+					coords = getRandomPos(size);
+					return coords;
+				}
+			}
+			for (int i = 0; i < size; i++) {
+				ourGrid[xCoord][yCoord - 1] = 1;
+			}
+
+
+			coords[1] = Character.toString((char)(xCoord + 'A'));
+			coords[1] += yCoord - size;
+		} else if (orientation == 3 && isValidLocation(xCoord - size, yCoord)) {
+			for (int i = 0; i < size; i++) {
+				if (ourGrid[xCoord - i][yCoord] != -1) {
+					coords = getRandomPos(size);
+					return coords;
+				}
+			}
+			for (int i = 0; i < size; i++) {
+				ourGrid[xCoord - i][yCoord] = 1;
+			}
+
+			coords[1] = Character.toString((char)(xCoord - size + 'A'));
+			coords[1] += yCoord;
+		} else {
+			coords = getRandomPos(size);
+		}
+
+		return coords;
+	}
 
 	void placeShips(String opponentID) {
 		// Fill Grid With -1s
 		for(int i = 0; i < grid.length; i++) { for(int j = 0; j < grid[i].length; j++) grid[i][j] = -1; }
+		for(int i = 0; i < ourGrid.length; i++) { for(int j = 0; j < ourGrid[i].length; j++) ourGrid[i][j] = -1; }
 
 		// Place Ships
-		placeDestroyer("D6", "D7"); // size 2
+		String[] pos;
+
+		pos = getRandomPos(1);
+		for (int i = 0; i < pos.length; i++) {
+			System.out.println(pos[i]);
+		}
+
+		placeDestroyer(pos[0], pos[1]);
+
+		pos = getRandomPos(2);
+		for (int i = 0; i < pos.length; i++) {
+			System.out.println(pos[i]);
+		}
+		placeSubmarine(pos[0], pos[1]);
+
+		pos = getRandomPos(2);
+		for (int i = 0; i < pos.length; i++) {
+			System.out.println(pos[i]);
+		}
+		placeCruiser(pos[0], pos[1]);
+
+		pos = getRandomPos(3);
+		for (int i = 0; i < pos.length; i++) {
+			System.out.println(pos[i]);
+		}
+		placeBattleship(pos[0], pos[1]);
+
+		pos = getRandomPos(4);
+		for (int i = 0; i < pos.length; i++) {
+			System.out.println(pos[i]);
+		}
+		placeCarrier(pos[0], pos[1]);
+
+		/*placeDestroyer("D6", "D7"); // size 2
 		placeSubmarine("E5", "E7"); // size 3
 		placeCruiser("F5", "F7");   // size 3
 		placeBattleship("G4", "G7");// size 4
-		placeCarrier("H3", "H7");	// size 5
+		placeCarrier("H3", "H7");	// size 5*/
 	}
 
 	void makeMove() {
@@ -63,6 +174,7 @@ public class Battleship {
 
 	public Battleship() {
 		this.grid = new int[8][8];
+		this.ourGrid = new int[8][8];
 		for(int i = 0; i < grid.length; i++) { for(int j = 0; j < grid[i].length; j++) grid[i][j] = -1; }
 		this.letters = new char[] {'A','B','C','D','E','F','G','H'};
 
