@@ -16,6 +16,8 @@ import java.util.ArrayList;
 public class Battleship {
 	public static String API_KEY = "487674642"; ///////// PUT YOUR API KEY HERE /////////
 	public static String GAME_SERVER = "battleshipgs.purduehackers.com";
+	public String opponent;
+	public File opponentFile;
 
 	//////////////////////////////////////  PUT YOUR CODE HERE //////////////////////////////////////
 
@@ -103,6 +105,16 @@ public class Battleship {
 		for(int i = 0; i < grid.length; i++) { for(int j = 0; j < grid[i].length; j++) grid[i][j] = -1; }
 		for(int i = 0; i < ourGrid.length; i++) { for(int j = 0; j < ourGrid[i].length; j++) ourGrid[i][j] = -1; }
 
+		// Save opponent ID
+		this.opponent = opponentID;
+		try {
+			this.opponentFile = new File(opponentID + ".txt");
+			if (!this.opponentFile.exists()) this.opponentFile.createNewFile();
+		}
+		catch(Exception e) {
+
+		}
+
 		// Place Ships
 		String[] pos;
 
@@ -145,11 +157,12 @@ public class Battleship {
 	}
 
 	void makeMove() {
+
 		for(int i = 0; i < 8; i++) {
 			for(int j = 0; j < 8; j++) {
 				if (this.grid[i][j] == -1) {
 					String wasHitSunkOrMiss = placeMove(this.letters[i] + String.valueOf(j));
-
+					recordMove(wasHitSunkOrMiss, i, j);
 					if (wasHitSunkOrMiss.equals("Hit") || wasHitSunkOrMiss.equals("Sunk")) {
 						this.grid[i][j] = 1;
 					} else {
@@ -159,6 +172,47 @@ public class Battleship {
 				}
 			}
 		}
+	}
+
+	boolean checkShipsTouching(int x1, int x2, int y1, int y2, int size) {
+		if (x1 == x2) {
+			for (int i = 0; i < size; i++) {
+				//check 4 spots around this coord x1,y1+size
+				if (this.grid[x1][y1+size+1] == 0) return false;
+				if (this.grid[x1][y1+size-1] == 0) return false;
+				if (this.grid[x1-1][y1+size] == 0) return false;
+				if (this.grid[x1+1][y1+size] == 0) return false;
+			}
+			return true;
+		}
+		else if (y1 == y2) {
+			for (int i = 0; i < size; i++) {
+				//check 4 spots around this coord x1,y1+size
+				if (this.grid[x1+size][y1+1] == 0) return false;
+				if (this.grid[x1+size][y1-1] == 0) return false;
+				if (this.grid[x1+size-1][y1] == 0) return false;
+				if (this.grid[x1+size+1][y1] == 0) return false;
+			}
+			return true;
+		}
+		else return false;
+		
+	}
+
+	void recordMove(String wasHitSunkOrMiss, int i, int j) {
+		try {
+			BufferedWriter bw = new BufferedWriter(new FileWriter(this.opponent + ".txt", true));
+			PrintWriter s = new PrintWriter(bw);
+			s.print(wasHitSunkOrMiss);
+			s.print(this.letters[i]);
+			s.print(String.valueOf(j));
+			s.print('\n');
+			s.close();
+		}
+		catch (Exception e) {
+
+		}
+
 	}
 
 	////////////////////////////////////// ^^^^^ PUT YOUR CODE ABOVE HERE ^^^^^ //////////////////////////////////////
