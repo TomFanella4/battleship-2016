@@ -16,6 +16,7 @@ public class Battleship {
 	public static String API_KEY = "487674642"; ///////// PUT YOUR API KEY HERE /////////
 	public static String GAME_SERVER = "battleshipgs.purduehackers.com";
 	public String opponent;
+	public File opponentFile;
 
 	//////////////////////////////////////  PUT YOUR CODE HERE //////////////////////////////////////
 
@@ -29,13 +30,12 @@ public class Battleship {
 		// Save opponent ID
 		this.opponent = opponentID;
 		try {
-			File opponentFile = new File(opponentID + ".txt");
-			opponentFile.createNewFile();
+			this.opponentFile = new File(opponentID + ".txt");
+			if (!this.opponentFile.exists()) this.opponentFile.createNewFile();
 		}
 		catch(Exception e) {
 
 		}
-
 
 		// Place Ships
 		placeDestroyer("D6", "D7"); // size 2
@@ -46,11 +46,12 @@ public class Battleship {
 	}
 
 	void makeMove() {
+
 		for(int i = 0; i < 8; i++) {
 			for(int j = 0; j < 8; j++) {
 				if (this.grid[i][j] == -1) {
 					String wasHitSunkOrMiss = placeMove(this.letters[i] + String.valueOf(j));
-
+					recordMove(wasHitSunkOrMiss, i, j);
 					if (wasHitSunkOrMiss.equals("Hit") || wasHitSunkOrMiss.equals("Sunk")) {
 						this.grid[i][j] = 1;
 					} else {
@@ -60,6 +61,22 @@ public class Battleship {
 				}
 			}
 		}
+	}
+
+	void recordMove(String wasHitSunkOrMiss, int i, int j) {
+		try {
+			BufferedWriter bw = new BufferedWriter(new FileWriter(this.opponent + ".txt", true));
+			PrintWriter s = new PrintWriter(bw);
+			s.print(wasHitSunkOrMiss);
+			s.print(this.letters[i]);
+			s.print(String.valueOf(j));
+			s.print('\n');
+			s.close();
+		}
+		catch (Exception e) {
+
+		}
+
 	}
 
 	////////////////////////////////////// ^^^^^ PUT YOUR CODE ABOVE HERE ^^^^^ //////////////////////////////////////
