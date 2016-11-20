@@ -24,12 +24,14 @@ public class Battleship {
 
 	char[] letters;
 	int[][] grid;
-    boolean destroyerAlive = true;
-    boolean submarineAlive = true;
-    boolean cruiseAlive = true;
-    boolean battleshipAlive = true;
-    boolean carrierAlive = true;
-	int[][] ourGrid;
+    int turnNumber;
+    boolean destroyerAlive;
+    boolean submarineAlive;
+    boolean cruiserAlive;
+    boolean battleshipAlive;
+    boolean carrierAlive;
+
+    int[][] ourGrid;
 
 	boolean isValidLocation(int x, int y) { return x >= 0 && y >= 0 && x < grid.length && y < grid[0].length && ourGrid[x][y] == 0; }
 
@@ -116,6 +118,14 @@ public class Battleship {
 	}
 
 	void placeShips(String opponentID) {
+		// initialize stuff
+		turnNumber = 0;
+		destroyerAlive = true;
+		submarineAlive = true;
+		cruiserAlive = true;
+		battleshipAlive = true;
+		carrierAlive = true;
+
 		System.out.println("***************** " + opponentID + " *****************");
 
 		// Fill Grid With -1s
@@ -183,17 +193,42 @@ public class Battleship {
 	}
 
 	void makeMove() {
+		int shoti = 0;
+		int shotj = 0;
 
-		Point p = getBestShot();
-		int shoti = (int)p.getX();
-		int shotj = (int)p.getY();
+		if (turnNumber < 4) {
+			// first four shots; just survey the area to throw off
+			// the probability distribution so it doesn't go for the
+			// center four squares every time
+			switch (turnNumber) {
+				case 0:
+					shoti = 2;
+					shotj = 2;
+					break;
+				case 1:
+					shoti = 5;
+					shotj = 2;
+					break;
+				case 2:
+					shoti = 2;
+					shotj = 5;
+					break;
+				case 3:
+					shoti = 5;
+					shotj = 5;
+					break;
+				default:
+					break;
+			}
+		} else {
+			// rest of the shots based on probability
+			Point p = getBestShot();
+			shoti = (int) p.getX();
+			shotj = (int) p.getY();
+		}
 
-		switch (move()) {
-			case 0:	shoti = 2; shotj = 2; break;
-			case 1: shoti = 5; shotj = 2; break;
-			case 2: shoti = 2; shotj = 5; break;
-			case 3: shoti = 5; shotj = 5; break;
-			default: break;
+		if (this.grid[shoti][shotj] > -1) {
+			System.out.println("Something went wrong... " + this.grid[shoti][shotj]);
 		}
 
 		String wasHitSunkOrMiss = placeMove(this.letters[shoti] + String.valueOf(shotj));
@@ -204,96 +239,55 @@ public class Battleship {
 		} else if (wasHitSunkOrMiss.equals("Hit")) {
 			this.grid[shoti][shotj] = 1;
 		} else {
+			// miss
 			this.grid[shoti][shotj] = 0;
 		}
+
+		turnNumber++;
 		return;
 	}
 
-	int move() {
-		int move = 0;
-		for (int i = 0; i < this.grid.length; i++) {
-			for (int j = 0; j < this.grid[i].length; j++) {
-				if (this.grid[i][j] > -1)
-					move++;
-			}
-		}
-		return move;
-	}
 
+	/**
+	 * @return best shot, highest probability
+	 */
 	Point getBestShot() {
 		// probability distribution of the grid
-		double[][] pGrid = new double[8][8];
+		int[][] pGrid = new int[8][8];
 
 		// iterate over each position
 		for (int i = 0; i < this.grid.length; i++) {
 			for (int j = 0; j < this.grid[i].length; j++) {
-				// if cell is hit, zero probability
-				if (this.grid[i][j] > -1) {
-					pGrid[i][j] = 0;
-					continue;
-				}
-
+				// put a little more weight on the top left squares because of the default positions
 				if (i < 5 && j < 5) {
 					pGrid[i][j] += 5;
 				}
 
 				// test if we can fit the ships in this cell some possible ways
-				// test Destroyer	size 2
-				int size = 2;
-				int weight = 5;
-				if (destroyerAlive) {
+				int[] shipSizes 	= new int[]{2,3,3,4,5};
+				int[] shipWeights 	= new int[]{5,3,4,3,2};
+				boolean[] shipLives = new boolean[]{destroyerAlive, submarineAlive, cruiserAlive, battleshipAlive, carrierAlive};
 
-					updatePGrid(pGrid, i, j, weight, determinePlacementRight(i, j, size));
-					updatePGrid(pGrid, i, j, weight, determinePlacementDown(i, j, size));
-					updatePGrid(pGrid, i, j, weight, determinePlacementLeft(i, j, size));
-					updatePGrid(pGrid, i, j, weight, determinePlacementUp(i, j, size));
+				for (int k = 0; k < shipSizes.length; k++) {
+					// if ship is not alive continue, no need to update
+					if (!shipLives[k])
+						continue;
+
+					updateScoreLeftToRight(pGrid, i, j, shipSizes[k], shipWeights[k]);
+					updateScoreTopToBottom(pGrid, i, j, shipSizes[k], shipWeights[k]);
 				}
-
-				// test Submarine	size 3
-				size = 3;
-				weight = 3;
-				if (submarineAlive) {
-					updatePGrid(pGrid, i, j, weight, determinePlacementRight(i, j, size));
-					updatePGrid(pGrid, i, j, weight, determinePlacementDown(i, j, size));
-					updatePGrid(pGrid, i, j, weight, determinePlacementLeft(i, j, size));
-					updatePGrid(pGrid, i, j, weight, determinePlacementUp(i, j, size));
-				}
-
-				// test Cruiser		size 3
-				size = 3;
-				weight = 4;
-				if (cruiseAlive) {
-					updatePGrid(pGrid, i, j, weight, determinePlacementRight(i, j, size));
-					updatePGrid(pGrid, i, j, weight, determinePlacementDown(i, j, size));
-					updatePGrid(pGrid, i, j, weight, determinePlacementLeft(i, j, size));
-					updatePGrid(pGrid, i, j, weight, determinePlacementUp(i, j, size));
-				}
-
-				// test Battleship 	size 4
-				size = 4;
-				weight = 3;
-				if (battleshipAlive) {
-					updatePGrid(pGrid, i, j, weight, determinePlacementRight(i, j, size));
-					updatePGrid(pGrid, i, j, weight, determinePlacementDown(i, j, size));
-					updatePGrid(pGrid, i, j, weight, determinePlacementLeft(i, j, size));
-					updatePGrid(pGrid, i, j, weight, determinePlacementUp(i, j, size));
-				}
-
-				// test Carrier 	size 5
-				size = 5;
-				weight = 2;
-				if (carrierAlive) {
-					updatePGrid(pGrid, i, j, weight, determinePlacementRight(i, j, size));
-					updatePGrid(pGrid, i, j, weight, determinePlacementDown(i, j, size));
-					updatePGrid(pGrid, i, j, weight, determinePlacementLeft(i, j, size));
-					updatePGrid(pGrid, i, j, weight, determinePlacementUp(i, j, size));
-				}
-
 			}
 		}
 
 		printPGrid(pGrid);
+		return max(pGrid);
+	}
 
+	/**
+	 * @param pGrid
+	 * @return point coordinates with max score
+	 */
+	Point max(int[][] pGrid) {
 		// choose highest probability point
 		int besti = 0;
 		int bestj = 0;
@@ -312,117 +306,85 @@ public class Battleship {
 		return new Point(besti, bestj);
 	}
 
-	void updatePGrid(double[][] pGrid, int i, int j, int weight, int place) {
-		if (place > 0) {
-			pGrid[i][j] += place + weight;
-		}
+	void updateScoreLeftToRight(int[][] pGrid, int i, int j, int len, int weight) {
+		updateScore(pGrid, i, j, len, 0, weight);
 	}
 
-	// 0 if we can place it no conflict
-	// 1 if we place it on a hit spot, no sink confirmed
-	// 2 if we place it on a hit spot, sink confirmed
-	int determinePlacementDown(int i, int j, int len) {
-		int placement = 0;
-
-		for (int k = 0; k < len; k++) {
-			if (i + k >= this.grid.length) {
-				return -1;
-			}
-
-			// up and down
-			switch (this.grid[i + k][j]) {
-				case 1:
-					placement += 10;
-					break;
-				case 2:
-					return -1;
-				default:
-					placement += 1;
-					break;
-			}
-		}
-
-		return placement;
+	void updateScoreTopToBottom(int[][] pGrid, int i, int j, int len, int weight) {
+		updateScore(pGrid, i, j, len, 1, weight);
 	}
 
-	// 0 if we can place it no conflict
-	// 1 if we place it on a hit spot, no sink confirmed
-	// 2 if we place it on a hit spot, sink confirmed
-	int determinePlacementUp(int i, int j, int len) {
-		int placement = 0;
+	/**
+	 * Determine score of placing a ship at this certain position
+	 * @param pGrid grid of scores
+	 * @param i		starting i index of ship
+	 * @param j		starting j index of ship
+	 * @param len	length of ship
+	 * @param dir	direction (0 = left to right, 1 = top to bottom)
+	 * @param weight arbitrary weight for the ship
+	 */
+	void updateScore(int[][] pGrid, int i, int j, int len, int dir, int weight) {
+		int score = 0;
 
 		for (int k = 0; k < len; k++) {
-			if (i - k < 0) {
-				return -1;
-			}
-
-			// up and down
-			switch (this.grid[i - k][j]) {
-				case 1:
-					placement += 10;
-					break;
-				case 2:
-					return -1;
-				default:
-					placement += 1;
-					break;
-			}
-		}
-
-		return placement;
-	}
-
-	// 0 if we can place it no conflict
-	// 1 if we place it on a hit spot, no sink confirmed
-	// 2 if we place it on a hit spot, sink confirmed
-	int determinePlacementRight(int i, int j, int len) {
-		int placement = 0;
-
-		for (int k = 0; k < len; k++) {
-			if (j + k >= this.grid[i].length) {
-				return -1;
+			int val;
+			try {
+				switch (dir) {
+					case 0:
+						// left to right
+						val = this.grid[i][j + k];
+						break;
+					case 1:
+						// top to bottom
+						val = this.grid[i + k][j];
+						break;
+					default:
+						return;
+				}
+			} catch (ArrayIndexOutOfBoundsException e) {
+				// not possible to fit ship here
+				return;
 			}
 
 			// left and right
-			switch (this.grid[i][j + k]) {
+			switch (val) {
+				case -1:
+					// no strike yet
+					score += 1;
+					break;
 				case 1:
-					placement += 10;
+					// square has a hit
+					score += 10;
 					break;
-				case 2:
-					return -1;
 				default:
-					placement += 1;
-					break;
+					// on top of a miss square, or a sink
+					// not possible to place ship here
+					return;
 			}
 		}
 
-		return placement;
-	}
-	// 0 if we can place it no conflict
-	// 1 if we place it on a hit spot, no sink confirmed
-	// 2 if we place it on a hit spot, sink confirmed
-	int determinePlacementLeft(int i, int j, int len) {
-		int placement = 0;
+		// return if we can't update them all
+		if (score < 1) {
+			return;
+		}
 
+		// now fill in pGrid with score
 		for (int k = 0; k < len; k++) {
-			if (j - k < 0) {
-				return -1;
-			}
-
-			// left and right
-			switch (this.grid[i][j - k]) {
+			switch (dir) {
+				case 0:
+					// left to right
+					// increase the score of this cell if no shot has been taken towards it
+					pGrid[i][j + k] += this.grid[i][j + k] > -1 ? 0 : score + weight;
+					break;
 				case 1:
-					placement += 10;
+					// top to bottom
+					// increase the score of this cell if no shot has been taken towards it
+					pGrid[i + k][j] += this.grid[i + k][j] > -1 ? 0 : score + weight;
 					break;
-				case 2:
-					return -1;
 				default:
-					placement += 1;
-					break;
+					return;
 			}
 		}
-
-		return placement;
 	}
 
 	void determineSink(int i, int j) {
@@ -431,12 +393,20 @@ public class Battleship {
 
 	}
 
-	void printPGrid(double[][] pGrid) {
+	void printPGrid(int[][] pGrid) {
 		System.out.println("pGrid:");
 		for (int i = 0; i < pGrid.length; i++) {
 			for (int j = 0; j < pGrid[i].length; j++) {
-				System.out.printf("|%4.0f  ", pGrid[i][j]);
+				System.out.printf("|%5d  ", pGrid[i][j]);
 			}
+			System.out.print("|");
+
+			System.out.print("\t\t\t");
+			for (int j = 0; j < pGrid[i].length; j++) {
+				System.out.printf("|%2d  ", this.grid[i][j]);
+			}
+			System.out.print("|");
+
 			System.out.println();
 		}
 		System.out.println("\n\n");
