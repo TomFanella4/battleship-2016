@@ -25,85 +25,94 @@ public class Battleship {
 	int[][] grid;
 	int[][] ourGrid;
 
-	boolean isValidLocation(int x, int y) {
-		return x >= 0 && y >= 0 && x < grid.length && y < grid[0].length;
-	}
+	boolean isValidLocation(int x, int y) { return x >= 0 && y >= 0 && x < grid.length && y < grid[0].length && ourGrid[x][y] == 0; }
 
 	String[] getRandomPos(int size) {
-		String[] coords = new String[2];
-		int xCoord = (int)(Math.random() * grid.length);
-		int yCoord = (int)(Math.random() * grid[0].length);
+		Boolean valid = false;
+		String[] coordinates = new String[2];
 
-		// 0=north, 1=east, 2=south, 3=west
-		int orientation = (int)(Math.random() * 4);
+		while (!valid) {
+			// Starting coordinates are random
+			int x1 = (int) (Math.random() * grid.length);
+			int y1 = (int) (Math.random() * grid[0].length);
 
-		coords[0] = Character.toString((char)(xCoord + 'A'));
-		coords[0] += yCoord;
+			// Check if starting coordinates are valid
+			if (!isValidLocation(x1, y1)) {
+				continue;
+			}
 
-		if (orientation == 0 && isValidLocation(xCoord, yCoord + size)) {
-			for (int i = 0; i < size; i++) {
-				if (ourGrid[xCoord][yCoord + i] != -1) {
-					coords = getRandomPos(size);
-					return coords;
+			// Set the initial coordinates
+			coordinates[0] = Character.toString((char) (x1 + 'A'));
+			coordinates[0] += y1;
+
+			// 0=north, 1=east, 2=south, 3=west
+			int orientation = (int) (Math.random() * 4);
+
+			// North
+			if (orientation == 0 && isValidLocation(x1, y1 + size)) {
+				for (int i = 0; i < size; i++) {
+					if (isValidLocation(x1, y1 + i)) {
+						continue;
+					}
 				}
-			}
-			for (int i = 0; i < size; i++) {
-				ourGrid[xCoord][yCoord + i] = 1;
-			}
-
-			coords[1] = Character.toString((char)(xCoord + 'A'));
-			coords[1] += yCoord + size;
-		} else if (orientation == 1 && isValidLocation(xCoord + size, yCoord)) {
-			for (int i = 0; i < size; i++) {
-				if (ourGrid[xCoord + i][yCoord] != -1) {
-					coords = getRandomPos(size);
-					return coords;
+				for (int i = 0; i < size; i++) {
+					ourGrid[x1][y1 + i] = 1;
 				}
-			}
-			for (int i = 0; i < size; i++) {
-				ourGrid[xCoord + i][yCoord] = 1;
-			}
 
-			coords[1] = Character.toString((char)(xCoord + size + 'A'));
-			coords[1] += yCoord;
-		} else if (orientation == 2 && isValidLocation(xCoord, yCoord - size)) {
-			for (int i = 0; i < size; i++) {
-				if (ourGrid[xCoord][yCoord - 1] != -1) {
-					coords = getRandomPos(size);
-					return coords;
+				coordinates[1] = Character.toString((char) (x1 + 'A'));
+				coordinates[1] += y1 + size;
+			} else if (orientation == 1 && isValidLocation(x1 + size, y1)) {
+				for (int i = 0; i < size; i++) {
+					if (ourGrid[x1 + i][y1] != -1) {
+						coordinates = getRandomPos(size);
+						return coordinates;
+					}
 				}
-			}
-			for (int i = 0; i < size; i++) {
-				ourGrid[xCoord][yCoord - 1] = 1;
-			}
-
-
-			coords[1] = Character.toString((char)(xCoord + 'A'));
-			coords[1] += yCoord - size;
-		} else if (orientation == 3 && isValidLocation(xCoord - size, yCoord)) {
-			for (int i = 0; i < size; i++) {
-				if (ourGrid[xCoord - i][yCoord] != -1) {
-					coords = getRandomPos(size);
-					return coords;
+				for (int i = 0; i < size; i++) {
+					ourGrid[x1 + i][y1] = 1;
 				}
-			}
-			for (int i = 0; i < size; i++) {
-				ourGrid[xCoord - i][yCoord] = 1;
-			}
 
-			coords[1] = Character.toString((char)(xCoord - size + 'A'));
-			coords[1] += yCoord;
-		} else {
-			coords = getRandomPos(size);
+				coordinates[1] = Character.toString((char) (x1 + size + 'A'));
+				coordinates[1] += y1;
+			} else if (orientation == 2 && isValidLocation(x1, y1 - size)) {
+				for (int i = 0; i < size; i++) {
+					if (ourGrid[x1][y1 - 1] != -1) {
+						coordinates = getRandomPos(size);
+						return coordinates;
+					}
+				}
+				for (int i = 0; i < size; i++) {
+					ourGrid[x1][y1 - 1] = 1;
+				}
+
+
+				coordinates[1] = Character.toString((char) (x1 + 'A'));
+				coordinates[1] += y1 - size;
+			} else if (orientation == 3 && isValidLocation(x1 - size, y1)) {
+				for (int i = 0; i < size; i++) {
+					if (ourGrid[x1 - i][y1] != -1) {
+						coordinates = getRandomPos(size);
+						return coordinates;
+					}
+				}
+				for (int i = 0; i < size; i++) {
+					ourGrid[x1 - i][y1] = 1;
+				}
+
+				coordinates[1] = Character.toString((char) (x1 - size + 'A'));
+				coordinates[1] += y1;
+			} else {
+				coordinates = getRandomPos(size);
+			}
 		}
 
-		return coords;
+		return coordinates;
 	}
 
 	void placeShips(String opponentID) {
 		// Fill Grid With -1s
 		for(int i = 0; i < grid.length; i++) { for(int j = 0; j < grid[i].length; j++) grid[i][j] = -1; }
-		for(int i = 0; i < ourGrid.length; i++) { for(int j = 0; j < ourGrid[i].length; j++) ourGrid[i][j] = -1; }
+		for(int i = 0; i < ourGrid.length; i++) { for(int j = 0; j < ourGrid[i].length; j++) ourGrid[i][j] = 0; }
 
 		// Save opponent ID
 		this.opponent = opponentID;
@@ -172,31 +181,6 @@ public class Battleship {
 				}
 			}
 		}
-	}
-
-	boolean checkShipsTouching(int x1, int x2, int y1, int y2, int size) {
-		if (x1 == x2) {
-			for (int i = 0; i < size; i++) {
-				//check 4 spots around this coord x1,y1+size
-				if (this.grid[x1][y1+size+1] == 0) return false;
-				if (this.grid[x1][y1+size-1] == 0) return false;
-				if (this.grid[x1-1][y1+size] == 0) return false;
-				if (this.grid[x1+1][y1+size] == 0) return false;
-			}
-			return true;
-		}
-		else if (y1 == y2) {
-			for (int i = 0; i < size; i++) {
-				//check 4 spots around this coord x1,y1+size
-				if (this.grid[x1+size][y1+1] == 0) return false;
-				if (this.grid[x1+size][y1-1] == 0) return false;
-				if (this.grid[x1+size-1][y1] == 0) return false;
-				if (this.grid[x1+size+1][y1] == 0) return false;
-			}
-			return true;
-		}
-		else return false;
-		
 	}
 
 	void recordMove(String wasHitSunkOrMiss, int i, int j) {
