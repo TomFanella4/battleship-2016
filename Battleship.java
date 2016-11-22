@@ -403,7 +403,7 @@ public class Battleship {
 
 			System.out.print("\t\t\t");
 			for (int j = 0; j < pGrid[i].length; j++) {
-				System.out.printf("|%2d  ", this.grid[i][j]);
+				System.out.printf("|%3d ", this.grid[i][j]);
 			}
 			System.out.print("|");
 
