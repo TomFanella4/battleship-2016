@@ -3,4 +3,5 @@
 /out
 *.DS_Store
 *.txt
+*.class
 
