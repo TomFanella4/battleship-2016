@@ -23,22 +23,15 @@ public class Battleship {
     char[] letters;
     int[][] grid;
     int turnNumber;
-    boolean destroyerAlive;
-    boolean submarineAlive;
-    boolean cruiserAlive;
-    boolean battleshipAlive;
-    boolean carrierAlive;
+    int[] shipLengths = new int[]{2,3,3,4,5};
+    boolean[] shipLives = new boolean[]{true, true, true, true, true};
+    double[] shipWeights = new double[5];
 
     int[][] ourGrid;
 
     void placeShips(String opponentID) {
         // initialize stuff
         turnNumber = 0;
-        destroyerAlive = true;
-        submarineAlive = true;
-        cruiserAlive = true;
-        battleshipAlive = true;
-        carrierAlive = true;
 
         System.out.println("***************** " + opponentID + " *****************");
 
@@ -141,14 +134,24 @@ public class Battleship {
         }
 
         if (this.grid[shoti][shotj] > -1) {
-            System.out.println("Something went wrong... " + this.grid[shoti][shotj]);
+            // this should never happen, but just in case...
+            // pick some spot that's actually possible
+            for (int i = 0; i < this.grid.length; i++)
+                for (int j = 0; j < this.grid[i].length; j++)
+                    if (this.grid[i][j] == -1) {
+                        shoti = i;
+                        shotj = j;
+                    }
+            System.out.printf("Shot: (%c%d) Also, something went wrong :(\n", this.letters[shoti], String.valueOf(shotj));
+        } else {
+            System.out.printf("Shot: (%c%d)\n", this.letters[shoti], String.valueOf(shotj));
         }
 
         String wasHitSunkOrMiss = placeMove(this.letters[shoti] + String.valueOf(shotj));
 
         if (wasHitSunkOrMiss.equals("Sunk")) {
-            determineSink(shoti, shotj);
             this.grid[shoti][shotj] = 2;
+            determineSink(shoti, shotj);
         } else if (wasHitSunkOrMiss.equals("Hit")) {
             this.grid[shoti][shotj] = 1;
         } else {
@@ -244,12 +247,16 @@ public class Battleship {
         return coordinates;
     }
 
+    /***************************
+     *  MOVE MAKER CODE BELOW  *
+     ***************************/
+
     /**
      * @return best shot, highest probability
      */
     Point getBestShot() {
         // probability distribution of the grid
-        int[][] pGrid = new int[8][8];
+        double[][] pGrid = new double[8][8];
 
         // iterate over each position
         for (int i = 0; i < this.grid.length; i++) {
@@ -259,18 +266,13 @@ public class Battleship {
                     pGrid[i][j] += 5;
                 }
 
-                // test if we can fit the ships in this cell some possible ways
-                int[] shipSizes 	= new int[]{2,3,3,4,5};
-                int[] shipWeights 	= new int[]{5,3,4,3,2};
-                boolean[] shipLives = new boolean[]{destroyerAlive, submarineAlive, cruiserAlive, battleshipAlive, carrierAlive};
-
-                for (int k = 0; k < shipSizes.length; k++) {
+                for (int k = 0; k < shipLengths.length; k++) {
                     // if ship is not alive continue, no need to update
                     if (!shipLives[k])
                         continue;
 
-                    updateScoreLeftToRight(pGrid, i, j, shipSizes[k], shipWeights[k]);
-                    updateScoreTopToBottom(pGrid, i, j, shipSizes[k], shipWeights[k]);
+                    updateScoreLeftToRight(pGrid, i, j, k);
+                    updateScoreTopToBottom(pGrid, i, j, k);
                 }
             }
         }
@@ -283,7 +285,7 @@ public class Battleship {
      * @param pGrid
      * @return point coordinates with max score
      */
-    Point max(int[][] pGrid) {
+    Point max(double[][] pGrid) {
         // choose highest probability point
         int besti = 0;
         int bestj = 0;
@@ -302,12 +304,12 @@ public class Battleship {
         return new Point(besti, bestj);
     }
 
-    void updateScoreLeftToRight(int[][] pGrid, int i, int j, int len, int weight) {
-        updateScore(pGrid, i, j, len, 0, weight);
+    void updateScoreLeftToRight(double[][] pGrid, int i, int j, int ship) {
+        updateScore(pGrid, i, j, ship, 0);
     }
 
-    void updateScoreTopToBottom(int[][] pGrid, int i, int j, int len, int weight) {
-        updateScore(pGrid, i, j, len, 1, weight);
+    void updateScoreTopToBottom(double[][] pGrid, int i, int j, int ship) {
+        updateScore(pGrid, i, j, ship, 1);
     }
 
     /**
@@ -315,14 +317,13 @@ public class Battleship {
      * @param pGrid grid of scores
      * @param i		starting i index of ship
      * @param j		starting j index of ship
-     * @param len	length of ship
+     * @param ship	ship index
      * @param dir	direction (0 = left to right, 1 = top to bottom)
-     * @param weight arbitrary weight for the ship
      */
-    void updateScore(int[][] pGrid, int i, int j, int len, int dir, int weight) {
+    void updateScore(double[][] pGrid, int i, int j, int ship, int dir) {
         int score = 0;
 
-        for (int k = 0; k < len; k++) {
+        for (int k = 0; k < shipLengths[ship]; k++) {
             int val;
             try {
                 switch (dir) {
@@ -365,17 +366,17 @@ public class Battleship {
         }
 
         // now fill in pGrid with score
-        for (int k = 0; k < len; k++) {
+        for (int k = 0; k < shipLengths[ship]; k++) {
             switch (dir) {
                 case 0:
                     // left to right
                     // increase the score of this cell if no shot has been taken towards it
-                    pGrid[i][j + k] += this.grid[i][j + k] > -1 ? 0 : score + weight;
+                    pGrid[i][j + k] += this.grid[i][j + k] > -1 ? 0 : (double)score * (1d - shipWeights[ship]); // TODO Multiply by weight
                     break;
                 case 1:
                     // top to bottom
                     // increase the score of this cell if no shot has been taken towards it
-                    pGrid[i + k][j] += this.grid[i + k][j] > -1 ? 0 : score + weight;
+                    pGrid[i + k][j] += this.grid[i + k][j] > -1 ? 0 : (double)score * (1d - shipWeights[ship]);
                     break;
                 default:
                     return;
@@ -383,31 +384,127 @@ public class Battleship {
         }
     }
 
-    void determineSink(int i, int j) {
+    /*******************************
+     *  DETERMINE SINK CODE BELOW  *
+     *******************************/
+
+    /**
+     * Determines which ship if most likely sunk
+     * @param shoti
+     * @param shotj
+     */
+    void determineSink(int shoti, int shotj) {
         // determine which ship was sunk
         // update values around to sink
 
-    }
+        int[] shipSinks = new int[5];
+        int shipSinkTotal = 0;
 
-    void printPGrid(int[][] pGrid) {
-        System.out.println("pGrid:");
-        for (int i = 0; i < pGrid.length; i++) {
-            for (int j = 0; j < pGrid[i].length; j++) {
-                System.out.printf("|%5d  ", pGrid[i][j]);
+        for (int i = 0; i < 5; i++) {
+            if (shipLives[i]) {
+                // Part 1: try to position the ship on a path through (i,j)
+                // if possible increment probability of it being that ship
+                int sinkLR = checkSinkableLeftAndRight(shoti, shotj, shipLengths[i]);
+                int sinkUD = checkSinkableUpAndDown(shoti, shotj, shipLengths[i]);
+                shipSinkTotal += sinkLR + sinkUD;
+                shipSinks[i] += sinkLR + sinkUD;
+
+                // TODO Part 2: place other ships in the other
+                // hit spaces to see if this sink position is possible
             }
-            System.out.print("|");
-
-            System.out.print("\t\t\t");
-            for (int j = 0; j < pGrid[i].length; j++) {
-                System.out.printf("|%3d ", this.grid[i][j]);
-            }
-            System.out.print("|");
-
-            System.out.println();
         }
-        System.out.println("\n\n");
+
+        // If it's only possible to be one ship, that ship is no longer alive.
+        boolean sinkConfirmed = false;
+        if (shipSinkTotal > 0) {
+            for (int i = 0; i < 5; i++) {
+                if (shipSinks[i] == shipSinkTotal) {
+                    shipLives[i] = false;
+                    sinkConfirmed = true;
+                    break;
+                }
+            }
+            // special case for two ships of length 3:
+            if (shipSinks[1] + shipSinks[2] == shipSinkTotal && shipSinks[1] == shipSinks[2]) {
+                // one of the length 3 ships is now dead
+                shipLives[1] = false;
+                sinkConfirmed = true;
+            }
+        } else {
+            // should never happen!
+            System.out.println("No ship sink possible! wtf");
+            shipSinkTotal = 1; // avoid divide by zero
+        }
+
+        // calculate weights
+        shipWeights = new double[5];
+        if (!sinkConfirmed) {
+            for (int i = 0; i < 5; i++) {
+                shipWeights[i] = (double)shipSinks[i] / (double)shipSinkTotal;
+            }
+        }
     }
 
+    /**
+     * @param shoti
+     * @param shotj
+     * @param length
+     * @return number of times it's possible to be sunk
+     */
+    int checkSinkableUpAndDown(int shoti, int shotj, int length) {
+        int possible = 0;
+        for (int starti = shoti - (length - 1); starti <= shoti; starti++) {
+            // check that they're all hits
+            boolean allHits = true;
+            for (int i = starti; allHits && i < starti + length; i++)
+                try {
+                    if (this.grid[i][shotj] != 1)
+                        allHits = false;
+                } catch (ArrayIndexOutOfBoundsException e) {
+                    allHits = false;
+                }
+            if (allHits) {
+                possible++;
+            }
+        }
+        return possible;
+    }
+
+    /**
+     * @param shoti
+     * @param shotj
+     * @param length
+     * @return number of times it's possible to be sunk
+     */
+    int checkSinkableLeftAndRight(int shoti, int shotj, int length) {
+        int possible = 0;
+        for (int startj = shotj - (length - 1); startj <= shotj; startj++) {
+            // check that they're all hits
+            boolean allHits = true;
+            for (int j = startj; allHits && j < startj + length; j++)
+                try {
+                    if (this.grid[shoti][j] != 1)
+                        allHits = false;
+                } catch (ArrayIndexOutOfBoundsException e) {
+                    allHits = false;
+                }
+            if (allHits) {
+                possible++;
+            }
+        }
+        return possible;
+    }
+
+    /********************
+     *  HELPER METHODS  *
+     *******************/
+
+    /**
+     * Records opponents move in text file
+     * @param wasHitSunkOrMiss
+     * @param i
+     * @param j
+     */
     void recordMove(String wasHitSunkOrMiss, int i, int j) {
         try {
             BufferedWriter bw = new BufferedWriter(new FileWriter(this.opponent + ".txt", true));
@@ -422,6 +519,29 @@ public class Battleship {
 
         }
 
+    }
+
+    /**
+     * Prints out the pGrid and this.grid
+     * @param pGrid
+     */
+    void printPGrid(double[][] pGrid) {
+        System.out.println("pGrid:");
+        for (int i = 0; i < pGrid.length; i++) {
+            for (int j = 0; j < pGrid[i].length; j++) {
+                System.out.printf("|%5.2f  ", pGrid[i][j]);
+            }
+            System.out.print("|");
+
+            System.out.print("\t\t\t");
+            for (int j = 0; j < this.grid[i].length; j++) {
+                System.out.printf("|%3d ", this.grid[i][j]);
+            }
+            System.out.print("|");
+
+            System.out.println();
+        }
+        System.out.println("\n\n");
     }
 
     ////////////////////////////////////// ^^^^^ PUT YOUR CODE ABOVE HERE ^^^^^ //////////////////////////////////////
